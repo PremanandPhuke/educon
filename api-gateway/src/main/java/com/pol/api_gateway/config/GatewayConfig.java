@@ -1,7 +1,6 @@
 package com.pol.api_gateway.config;
 
 import com.pol.api_gateway.service.JwtService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;

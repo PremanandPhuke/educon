@@ -4,6 +4,8 @@ import com.pol.user_service.auth.model.RefreshToken;
 import com.pol.user_service.auth.model.User;
 import com.pol.user_service.auth.repository.RefreshTokenRepository;
 import com.pol.user_service.auth.repository.UserRepository;
+import com.pol.user_service.exception.customExceptions.RefreshTokenExpiredException;
+import com.pol.user_service.exception.customExceptions.RefreshTokenNotFound;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,7 +20,7 @@ public class RefreshTokenService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    @Value("2500000000")
+    @Value("${jwt.refresh-expiration}")
     private long refreshTokenExpiration;
 
     public RefreshTokenService(UserRepository userRepository, RefreshTokenRepository refreshTokenRepository) {
@@ -48,11 +50,11 @@ public class RefreshTokenService {
     public RefreshToken verifyRefreshToken(String refreshToken){
         RefreshToken existingRefreshToken = refreshTokenRepository
                 .findByRefreshToken(refreshToken)
-                .orElseThrow(()->new RuntimeException("Refresh token not found"));
+                .orElseThrow(()->new RefreshTokenNotFound("Refresh token not found"));
 
         if(existingRefreshToken.getExpirationTime().compareTo(Instant.now())<0){
             refreshTokenRepository.deleteById(existingRefreshToken.getId());
-            throw new RuntimeException("Refresh Token expired. Please login again.");
+            throw new RefreshTokenExpiredException("Refresh Token expired. Please login again.");
         }
         return existingRefreshToken;
     }

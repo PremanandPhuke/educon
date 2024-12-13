@@ -13,4 +13,12 @@ public class VerifyOtpDTO {
 
     @NotNull(message = "Please provide OTP send to your registered email address.")
     private Integer otp;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Integer getOtp() {
+        return otp;
+    }
 }

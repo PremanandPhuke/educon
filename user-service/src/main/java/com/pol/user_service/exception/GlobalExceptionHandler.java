@@ -2,6 +2,8 @@ package com.pol.user_service.exception;
 
 import com.pol.user_service.auth.dto.ErrorResponse;
 import com.pol.user_service.exception.customExceptions.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,32 +19,31 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(
-            AccessDeniedException ex, WebRequest request) {
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.FORBIDDEN.value());
-        response.put("error", "Forbidden");
-        response.put("message", "You do not have permission to access this resource");
-        response.put("path", request.getDescription(false));
-
-        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "You do not have permission to access this resource"
+        );
+        logger.error("AccessDenied exception occurred: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGlobalException(
-            Exception ex, WebRequest request) {
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("error", "Internal Server Error");
-        response.put("message", ex.getMessage());
-        response.put("path", request.getDescription(false));
-
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ErrorResponse> handleGlobalException(
+            Exception ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                "Please try again after sometime."
+        );
+        logger.error("Exception occurred: {}",ex.getMessage(),ex);
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(UserNotFoundException.class)
@@ -52,6 +53,7 @@ public class GlobalExceptionHandler {
                 "User Not Found",
                 ex.getMessage()
         );
+        logger.error("UserNotFoundException occurred: {}",ex.getMessage(),ex);
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
@@ -62,6 +64,7 @@ public class GlobalExceptionHandler {
                 "OTP Expired",
                 ex.getMessage()
         );
+        logger.error("OTPExpiredException occurred: {}",ex.getMessage(),ex);
         return new ResponseEntity<>(errorResponse, HttpStatus.GONE);
     }
 
@@ -72,6 +75,7 @@ public class GlobalExceptionHandler {
                 "Too Many Attempts",
                 ex.getMessage()
         );
+        logger.error("TooManyAttemptsException occurred: {}",ex.getMessage(),ex);
         return new ResponseEntity<>(errorResponse, HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -82,6 +86,7 @@ public class GlobalExceptionHandler {
                 "Invalid OTP",
                 ex.getMessage()
         );
+        logger.error("InvalidOTPException occurred: {}",ex.getMessage(),ex);
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
@@ -92,6 +97,29 @@ public class GlobalExceptionHandler {
                 "User already exist",
                 ex.getMessage()
         );
+        logger.error("UserAlreadyExists occurred: {}",ex.getMessage(),ex);
+        return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenExpiredException(RefreshTokenExpiredException ex){
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Token expired",
+                ex.getMessage()
+        );
+        logger.error("RefreshTokenExpiredException occurred: {}",ex.getMessage(),ex);
+        return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(RefreshTokenNotFound.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenNotFoundException(RefreshTokenNotFound ex){
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Token not found",
+                ex.getMessage()
+        );
+        logger.error("RefreshTokenNotFound occurred: {}",ex.getMessage(),ex);
         return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
     }
 }

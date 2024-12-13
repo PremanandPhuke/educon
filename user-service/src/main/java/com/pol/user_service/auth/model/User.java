@@ -63,6 +63,71 @@ public class User implements CustomUserDetails {
     @OneToOne(mappedBy = "user")
     private RefreshToken refreshToken;
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public Set<UserRole> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<UserRole> roles) {
+        this.roles = roles;
+    }
+
+    public RefreshToken getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(RefreshToken refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public ForgotPassword getForgotPassword() {
+        return forgotPassword;
+    }
+
+    public void setForgotPassword(ForgotPassword forgotPassword) {
+        this.forgotPassword = forgotPassword;
+    }
+
+    @Override
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private ForgotPassword forgotPassword;
 
@@ -72,6 +137,8 @@ public class User implements CustomUserDetails {
                 .map(role -> new SimpleGrantedAuthority(role.getRoleName()))
                 .collect(Collectors.toSet());
     }
+
+
 
     @Override
     public String getUsername(){
@@ -101,5 +168,10 @@ public class User implements CustomUserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    @Override
+    public String getFullname() {
+        return this.firstName+ " " + this.lastName;
     }
 }

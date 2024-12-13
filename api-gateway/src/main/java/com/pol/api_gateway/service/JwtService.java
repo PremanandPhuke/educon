@@ -15,10 +15,10 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    @Value("jkasdfjkadshk")
+    @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("2500000000")
+    @Value("${jwt.expiration}")
     private long jwtExpiration;
 
     public String extractUsername(String token) {
@@ -31,6 +31,10 @@ public class JwtService {
 
     public String extractUserId(String token){
         return extractClaim(token,claims -> claims.get("userId",String.class));
+    }
+
+    public String extractFullName(String token){
+        return extractClaim(token,claims -> claims.get("name",String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

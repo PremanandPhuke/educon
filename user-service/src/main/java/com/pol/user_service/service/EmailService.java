@@ -7,13 +7,20 @@ import com.pol.user_service.auth.model.ForgotPassword;
 import com.pol.user_service.auth.model.User;
 import com.pol.user_service.auth.repository.ForgotPasswordRepository;
 import com.pol.user_service.auth.repository.UserRepository;
+import com.pol.user_service.auth.service.AuthService;
 import com.pol.user_service.auth.service.JwtService;
 import com.pol.user_service.auth.service.RefreshTokenService;
+import com.pol.user_service.config.KafkaConfig;
+import com.pol.user_service.constants.KafkaTopics;
 import com.pol.user_service.exception.customExceptions.InvalidOTPException;
 import com.pol.user_service.exception.customExceptions.OTPExpiredException;
 import com.pol.user_service.exception.customExceptions.TooManyAttemptsException;
 import com.pol.user_service.exception.customExceptions.UserNotFoundException;
+import com.pol.user_service.schema.avro.ForgotPasswordEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,19 +33,25 @@ import java.util.Random;
 public class EmailService {
     private final UserRepository userRepository;
     private final ForgotPasswordRepository forgotPasswordRepository;
-    private final ResendService resendService;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
-    public EmailService(UserRepository userRepository, ForgotPasswordRepository forgotPasswordRepository, ResendService resendService, JwtService jwtService, RefreshTokenService refreshTokenService) {
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+    private final KafkaTemplate<String,Object> kafkaTemplate;
+
+    public EmailService(UserRepository userRepository,
+                        ForgotPasswordRepository forgotPasswordRepository,
+                        JwtService jwtService,
+                        RefreshTokenService refreshTokenService,
+                        KafkaTemplate<String, Object> kafkaTemplate) {
         this.userRepository = userRepository;
         this.forgotPasswordRepository = forgotPasswordRepository;
-        this.resendService = resendService;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
-    @Value("300000")
+    @Value("${jwt.forgot-expiration}")
     private long forgotPasswordExpiration;
 
 
@@ -53,13 +66,17 @@ public class EmailService {
                 .expirationTime(new Date((System.currentTimeMillis()+forgotPasswordExpiration)))
                 .user(user)
                 .build();
-
-        String resendId = resendService.sendForgotPasswordOTPEmail(
-                user.getEmail(),
-                "OTP VERIFICATION",
-                user.getFirstName()+" "+user.getLastName(),
-                otp.toString());
         forgotPasswordRepository.save(forgotPasswordObj);
+
+        ForgotPasswordEvent newForgotPasswordEvent = new ForgotPasswordEvent();
+        newForgotPasswordEvent.setEmail(user.getEmail());
+        newForgotPasswordEvent.setOtp(otp.toString());
+        newForgotPasswordEvent.setName(user.getFirstName()+" "+user.getLastName());
+        try {
+            kafkaTemplate.send(KafkaTopics.ForgotPasswordTopic, newForgotPasswordEvent);
+        } catch (Exception kafkaException) {
+            logger.error("Failed to publish forgot password event to Kafka", kafkaException);
+        }
         return "Email sent for verification";
     }
 

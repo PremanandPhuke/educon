@@ -7,5 +7,5 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
 resend:
-  key: re_fgWQ8DLw_28pKziHpKst9ybLdwqPjQc1W
+  key: re_gAePxYjU_C9uu9HQKpLR4ZFsQgcno3uTC
   from-email: onboarding@resend.dev

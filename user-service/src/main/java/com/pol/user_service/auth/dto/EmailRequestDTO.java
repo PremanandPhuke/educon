@@ -9,4 +9,12 @@ public class EmailRequestDTO {
     @NotBlank(message = "Please provide a email address.")
     @Email(message = "Please provide a valid email address.")
     private String email;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 }

@@ -7,19 +7,19 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="api-gateway" />
         <module name="config-server" />
-        <module name="user-service" />
-        <module name="service-registry" />
+        <module name="payment-service" />
         <module name="email-service" />
+        <module name="api-gateway" />
+        <module name="product-service" />
+        <module name="user-service" />
+        <module name="blog-service" />
+        <module name="service-registry" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="blog-service" target="23" />
       <module name="openfeign-produces" target="23" />
       <module name="openfeign-test" target="23" />
-      <module name="payment-service" target="23" />
-      <module name="product-service" target="23" />
       <module name="shared-events" target="23" />
     </bytecodeTargetLevel>
   </component>

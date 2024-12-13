@@ -8,6 +8,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -16,12 +17,11 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    @Value("ZWR1Y29uc3VsdGFuY3lzeXN0ZW0gaXMgYSBwcm9qZWN0IGkgYW0gYnVpbGRpbmcgYXMgYW4gaW50ZXJuIGF0IGluZm9zeXMgc3ByaW5nYm9hcmQ=")
+    @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("2500000000")
+    @Value("${jwt.expiration}")
     private long jwtExpiration;
-
     // extract username from jwt
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -61,8 +61,10 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
         String id = userDetails.getId().toString();
+        String name = userDetails.getFullname();
         extraClaims.put("roles", roles);
         extraClaims.put("userId",id);
+        extraClaims.put("name",name);
         return Jwts
                 .builder()
                 .setClaims(extraClaims)

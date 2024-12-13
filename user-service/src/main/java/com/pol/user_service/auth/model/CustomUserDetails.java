@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface CustomUserDetails extends UserDetails {
     UUID getId();
+    String getFullname();
 }

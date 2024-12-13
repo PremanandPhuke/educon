@@ -7,12 +7,10 @@ import com.pol.user_service.auth.dto.RegisterRequestDTO;
 import com.pol.user_service.auth.model.User;
 import com.pol.user_service.auth.model.UserRole;
 import com.pol.user_service.auth.repository.UserRepository;
-import com.pol.user_service.auth.repository.UserRoleRepository;
-import com.pol.user_service.config.KafkaConfig;
-import com.pol.user_service.constants.UserRoleConstants;
+import com.pol.user_service.constants.KafkaTopics;
 import com.pol.user_service.exception.customExceptions.DatabaseAccessException;
 import com.pol.user_service.exception.customExceptions.UserAlreadyExists;
-import com.pol.user_service.service.ResendService;
+import com.pol.user_service.schema.avro.UserRegisteredEvent;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
@@ -24,26 +22,32 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-
     private final PasswordEncoder passwordEncoder;
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
     private final AuthenticationManager authenticationManager;
+
+    private final UserRepository userRepository;
+
+    private final JwtService jwtService;
     private final UserRoleService userRoleService;
+    private final RefreshTokenService refreshTokenService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public AuthResponseDTO register(RegisterRequestDTO registerRequestDTO){
         if(userRepository.existsByEmail(registerRequestDTO.getEmail())){
-            throw new RuntimeException("User with email id "+registerRequestDTO.getEmail()+" already exists");
+            throw new UserAlreadyExists("User with email id "+registerRequestDTO.getEmail()+" already exists");
         }
         if(userRepository.existsByUsername(registerRequestDTO.getUsername())){
-            throw new RuntimeException("User with username "+registerRequestDTO.getUsername()+" already exists");
+            throw new UserAlreadyExists("User with username "+registerRequestDTO.getUsername()+" already exists");
         }
         UserRole defaultRole = userRoleService.getDefaultRoleUser();
         var user = User.builder()
@@ -56,7 +60,14 @@ public class AuthService {
                 .build();
         try {
             User savedUser = userRepository.save(user);
-            kafkaTemplate.send("user-registered-topic",savedUser);
+            UserRegisteredEvent newUserRegisteredEvent = new UserRegisteredEvent();
+            newUserRegisteredEvent.setEmail(savedUser.getEmail());
+            newUserRegisteredEvent.setName(savedUser.getUsername());
+            try {
+                kafkaTemplate.send(KafkaTopics.UserRegisteredTopic, newUserRegisteredEvent);
+            } catch (Exception kafkaException) {
+                logger.error("Failed to publish user registration event to Kafka", kafkaException);
+            }
             var accessToken = jwtService.generateToken(savedUser);
             var refreshToken = refreshTokenService.createRefreshToken(savedUser.getEmail());
             return AuthResponseDTO.builder()
@@ -64,12 +75,15 @@ public class AuthService {
                     .refreshToken(refreshToken.getRefreshToken())
                     .build();
         } catch (DataIntegrityViolationException e) {
+            logger.error("User registration failed: Duplicate email detected", e);
             throw new UserAlreadyExists("A user with this email already exists.");
         } catch (ConstraintViolationException e) {
             // Handle validation constraint failure from db
+            logger.error("User registration failed: Validation constraint violation", e);
             throw new RuntimeException("User data is invalid.");
         } catch (DataAccessException e) {
             // Handle general database access errors
+            logger.error("User registration failed: Database access error", e);
             throw new DatabaseAccessException("Unable to save user due to database error.");
         }
     }

@@ -36,10 +36,11 @@ public class JwtAuthorizationFilter implements GatewayFilter {
         }
 
         List<String> roles;
-        String userId ;
+        String userId ,name;
         try {
             roles = jwtService.extractRoles(token);
             userId = jwtService.extractUserId(token);
+            name = jwtService.extractFullName(token);
         } catch (RuntimeException e) {
             throw new JwtExceptions("JWT token is expired");
         }
@@ -50,6 +51,7 @@ public class JwtAuthorizationFilter implements GatewayFilter {
         exchange.getRequest().mutate()
                 .header("X-User-Id",userId)
                 .header("X-User-Roles", String.join(",", roles))
+                .header("X-User-Name",name)
                 .build();
         return chain.filter(exchange);
     }
