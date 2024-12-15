@@ -62,12 +62,13 @@ public class CourseService {
     public CourseResponseDTO updateCourseById(UUID id, CourseRequestDTO courseRequestDTO,String userId){
         Course course = courseRepository.findById(id).orElseThrow(()->new CourseNotFoundException("Course not found with id : "+id));
         if(!UUID.fromString(userId).equals(course.getInstructorId())){
-            throw new UnauthorizedActionException("You are not authorized to delete this blog.");
+            throw new UnauthorizedActionException("You are not authorized to Update this course.");
         }
         course.setTitle(courseRequestDTO.getTitle());
         course.setDescription(courseRequestDTO.getDescription());
         course.setSummary(courseRequestDTO.getSummary());
         course.setPrice(courseRequestDTO.getPrice());
+        course.setStatus(courseRequestDTO.getStatus());
         course.setCategory(categoryRepository.findById(courseRequestDTO.getCategoryId())
                 .orElseThrow(()->new CategoryNotFoundException("Category not found with id :"+courseRequestDTO.getCategoryId())));
         return CourseMapper.toResponseDTO(courseRepository.save(course));
@@ -92,6 +93,25 @@ public class CourseService {
                 .build();
     }
 
+    public CourseFullDetailPageResponseDTO getAllCourseFullDetails(int page, int size, String sortBy, String order){
+        String[] sortFields = sortBy.split(",");
+        Sort sort = Sort.by(order.equalsIgnoreCase("asc")?Sort.Order.asc(sortFields[0]):Sort.Order.desc(sortFields[0]));
+        for(int i=1;i<sortFields.length;i++){
+            sort= Sort.by(order.equalsIgnoreCase("asc")?Sort.Order.asc(sortFields[i]):Sort.Order.desc(sortFields[i]));
+        }
+        Pageable pageable = PageRequest.of(page,size,sort);
+        Page<CourseAdminResponse> courseResponseDTOPage = courseRepository.findAllFullCourses(pageable);
+        return CourseFullDetailPageResponseDTO.builder()
+                .courses(courseResponseDTOPage.getContent())
+                .currentPage(courseResponseDTOPage.getNumber())
+                .totalPages(courseResponseDTOPage.getTotalPages())
+                .totalElements(courseResponseDTOPage.getTotalElements())
+                .pageSize(courseResponseDTOPage.getSize())
+                .hasNext(courseResponseDTOPage.hasNext())
+                .hasPrevious(courseResponseDTOPage.hasPrevious())
+                .build();
+    }
+
     public CoursePageResponseDTO searchByKeyword(String keyword,int page, int size, String sortBy, String order){
         String[] sortFields = sortBy.split(",");
         Sort sort = Sort.by(order.equalsIgnoreCase("asc")?Sort.Order.asc(sortFields[0]):Sort.Order.desc(sortFields[0]));
@@ -110,6 +130,4 @@ public class CourseService {
                 .hasPrevious(courseSummaryDTOPage.hasPrevious())
                 .build();
     }
-
-
 }

@@ -2,10 +2,13 @@ package com.pol.product_service.controller;
 
 import com.pol.product_service.DTO.category.CategoryRequestDTO;
 import com.pol.product_service.DTO.category.CategoryResponseDTO;
+import com.pol.product_service.DTO.course.CourseFullDetailPageResponseDTO;
+import com.pol.product_service.DTO.course.CoursePageResponseDTO;
 import com.pol.product_service.DTO.course.CourseRequestDTO;
 import com.pol.product_service.DTO.course.CourseResponseDTO;
 import com.pol.product_service.service.CategoryService;
 import com.pol.product_service.service.CourseService;
+import com.pol.product_service.utils.AppConstants;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +54,16 @@ public class AdminController {
     //////////////////////// COURSE CONTROLLERS //////////////////////////////
     //////////////////////////////////////////////////////////////////////////
 
-
+    @GetMapping("/courses")
+    public ResponseEntity<CourseFullDetailPageResponseDTO> fetchCourse(
+            @RequestParam(defaultValue = AppConstants.PAGE,required = false) int page,
+            @RequestParam(defaultValue = AppConstants.SIZE,required = false) int size,
+            @RequestParam(defaultValue = AppConstants.SORT_BY_COURSE_TITLE,required = false) String sortBy,
+            @RequestParam(defaultValue = AppConstants.ORDER,required = false) String order
+    ){
+        CourseFullDetailPageResponseDTO response = courseService.getAllCourseFullDetails(page, size, sortBy, order);
+        return ResponseEntity.ok(response);
+    }
     @PostMapping("/courses")
     public ResponseEntity<CourseResponseDTO> CreateCourse(@RequestBody @Valid CourseRequestDTO courseRequestDTO,
                                                           @RequestHeader("X-User-Id") String userId,

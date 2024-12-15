@@ -1,6 +1,8 @@
 package com.pol.product_service.repository;
 
+import com.pol.product_service.DTO.course.CourseAdminResponse;
 import com.pol.product_service.DTO.course.CoursePriceDTO;
+import com.pol.product_service.DTO.course.CourseResponseDTO;
 import com.pol.product_service.DTO.course.CourseSummaryDTO;
 import com.pol.product_service.entity.Course;
 import com.pol.product_service.entity.CourseStatus;
@@ -22,6 +24,13 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
                     "WHERE c.status = :status"
     )
     Page<CourseSummaryDTO> findAllCoursesByStatus(@Param("status") CourseStatus status, Pageable pageable);
+
+    @Query(
+            "SELECT new com.pol.product_service.DTO.course.CourseAdminResponse(c.id, c.title, c.description, c.summary, c.price, c.status," +
+                    "new com.pol.product_service.DTO.category.CategorySummaryResponseDTO(c.category.id, c.category.name)) " +
+                    "FROM Course c"
+    )
+    Page<CourseAdminResponse> findAllFullCourses(Pageable pageable);
 
     @Query(
             "SELECT new com.pol.product_service.DTO.course.CourseSummaryDTO(c.id, c.title, c.summary, c.price, c.instructor) " +
